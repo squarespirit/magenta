@@ -5,17 +5,12 @@ import numpy as np
 import os
 import argparse
 
-tm = TrainedModel(
-  config=configs.CONFIG_MAP['cat-mel_2bar_big'],
-  batch_size=512,  # From config
-  checkpoint_dir_or_path='cat-mel_2bar_big.tar',
-)
-
-def encode_midi(input_midi_path, output_path, print_progress=False):
+def encode_midi(tm, input_midi_path, output_path, print_progress=False):
   """
   Convert midi file to latent vector file.
   If the midi file fails to convert to a NoteSequence, or the NoteSequence
     does not correspond to any tensors, do not output any file.
+  tm: Trained model used for encoding
   input_midi_path: Path to midi file.
   output_path: Path to .npy file to save latent vectors.
     The output latent vector array has shape (# NoteSequences, 
@@ -39,27 +34,37 @@ def encode_midi(input_midi_path, output_path, print_progress=False):
     print('Encoded', input_midi_path, '->', len(tensors.inputs), 'vectors at', output_path)
 
 
-parser = argparse.ArgumentParser(
-  description='Encode MIDI files to latent vectors.')
-parser.add_argument('--input_dir',
-  help='Input directory to recursively look for MIDI files')
-parser.add_argument('--output_dir',
-  help='Output directory to write latent vector files. The directory structure of input_dir will be replicated')
-parser.add_argument('--print_progress', action='store_true', 
-  help='Print encoding progress')
-args = parser.parse_args()
+def main():
+  parser = argparse.ArgumentParser(
+    description='Encode MIDI files to latent vectors.')
+  parser.add_argument('--config', help='Name of config')
+  parser.add_argument('--checkpoint_path', help='Path to model checkpoint')
+  parser.add_argument('--input_dir',
+    help='Input directory to recursively look for MIDI files')
+  parser.add_argument('--output_dir',
+    help='Output directory to write latent vector files. The directory structure replicates that of input_dir, except replacing .mid with .npy files.')
+  parser.add_argument('--print_progress', action='store_true', 
+    help='Print encoding progress')
+  args = parser.parse_args()
 
+  tm = TrainedModel(
+    config=configs.CONFIG_MAP[args.config],
+    batch_size=512,  # From config
+    checkpoint_dir_or_path=args.checkpoint_path,
+  )
 
-for dirpath, _, filenames in os.walk(args.input_dir):
-  for filename in filenames:
-    if filename.endswith('.mid'):
-      input_path = os.path.join(dirpath, filename)
-      # Create dir with output file
-      output_vecs_dir = os.path.join(
-          args.output_dir,
-          os.path.relpath(dirpath, start=args.input_dir))
-      os.makedirs(output_vecs_dir, exist_ok=True)
-      output_path = os.path.join(
-          output_vecs_dir,
-          os.path.splitext(filename)[0] + '.npy')
-      encode_midi(input_path, output_path, args.print_progress)
+  for dirpath, _, filenames in os.walk(args.input_dir):
+    for filename in filenames:
+      if filename.endswith('.mid'):
+        input_path = os.path.join(dirpath, filename)
+        # Create dir with output file
+        output_vecs_dir = os.path.join(
+            args.output_dir,
+            os.path.relpath(dirpath, start=args.input_dir))
+        os.makedirs(output_vecs_dir, exist_ok=True)
+        output_path = os.path.join(
+            output_vecs_dir,
+            os.path.splitext(filename)[0] + '.npy')
+        encode_midi(tm, input_path, output_path, args.print_progress)
+
+main()
