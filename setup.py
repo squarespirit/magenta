@@ -49,7 +49,8 @@ REQUIRED_PACKAGES = [
     'pretty_midi >= 0.2.6',
     'protobuf >= 3.6.1',
     'pygtrie >= 2.3',
-    'python-rtmidi >= 1.1, < 1.2',  # 1.2 breaks us
+    # python-rtmidi doesn't work on cloud GPU and is not needed
+    # 'python-rtmidi >= 1.1, < 1.2',  # 1.2 breaks us
     'scipy >= 0.18.1, <= 1.2.0',  # 1.2.1 causes segfaults in pytest.
     'sk-video',
     'sonnet',
@@ -62,10 +63,11 @@ REQUIRED_PACKAGES = [
     'apache-beam[gcp] >= 2.8.0;python_version=="2.7"',
 ]
 
+# Only 1.12 works on cloud GPU
 if gpu_mode:
-  REQUIRED_PACKAGES.append('tensorflow-gpu >= 1.12.0')
+  REQUIRED_PACKAGES.append('tensorflow-gpu == 1.12.0')
 else:
-  REQUIRED_PACKAGES.append('tensorflow >= 1.12.0')
+  REQUIRED_PACKAGES.append('tensorflow == 1.12.0')
 
 # pylint:disable=line-too-long
 CONSOLE_SCRIPTS = [
